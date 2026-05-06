@@ -118,6 +118,7 @@ Large media files, generated outputs, and model files are ignored by Git.
 
 ## Documentation
 
+- 文档中心: [docs/README.md](docs/README.md)
 - 使用说明书: [docs/USAGE.zh-CN.md](docs/USAGE.zh-CN.md)
 - 开发文档: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 - 部署文档: [docs/DEPLOYMENT.zh-CN.md](docs/DEPLOYMENT.zh-CN.md)
