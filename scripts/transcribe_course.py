@@ -3,14 +3,18 @@ from __future__ import annotations
 
 import argparse
 import math
+import os
 import re
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
-from faster_whisper import WhisperModel
-
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 DEFAULT_MODEL = "models/faster-whisper-large-v3"
 REQUIRED_MODEL_FILES = (
@@ -165,12 +169,13 @@ def split_audio(full_audio: Path, segment_dir: Path, segment_seconds: int) -> li
 
 
 def transcribe_segments(
-    model: WhisperModel,
+    model,
     audio_segments: Iterable[Path],
     segment_seconds: int,
     language: str | None,
     beam_size: int,
     vad_filter: bool,
+    progress: Callable[[str, dict[str, object]], None] | None = None,
 ) -> list[TranscriptSegment]:
     output: list[TranscriptSegment] = []
     next_index = 1
@@ -179,6 +184,15 @@ def transcribe_segments(
         match = re.search(r"part_(\d+)\.wav$", segment_path.name)
         part_index = int(match.group(1)) if match else len(output)
         offset = part_index * segment_seconds
+        if progress:
+            progress(
+                "transcribe_segment",
+                {
+                    "file": segment_path.name,
+                    "partIndex": part_index,
+                    "offset": offset,
+                },
+            )
         print(f"Transcribing {segment_path.name} at offset {format_md_time(offset)}", flush=True)
 
         segments, info = model.transcribe(
@@ -307,12 +321,17 @@ def process_video(
     vad_filter: bool = True,
     skip_audio: bool = False,
     allow_download: bool = False,
+    progress: Callable[[str, dict[str, object]], None] | None = None,
 ) -> ProcessResult:
+    add_windows_nvidia_dll_dirs()
     video = video.expanduser().resolve()
     if not video.exists():
         raise FileNotFoundError(video)
     if segment_seconds <= 0 or segment_seconds > 600:
         raise ValueError("segment_seconds must be between 1 and 600.")
+
+    if progress:
+        progress("prepare", {"video": str(video)})
 
     title = safe_stem(video)
     output_dir = output_dir.expanduser().resolve() if output_dir else Path("output", title).resolve()
@@ -323,7 +342,11 @@ def process_video(
     full_audio = audio_dir / "full.wav"
 
     if not skip_audio:
+        if progress:
+            progress("extract_audio", {"target": str(full_audio)})
         extract_audio(video, full_audio)
+        if progress:
+            progress("split_audio", {"segmentSeconds": segment_seconds})
         segment_paths = split_audio(full_audio, segment_dir, segment_seconds)
     else:
         segment_paths = sorted(segment_dir.glob("part_*.wav"))
@@ -333,7 +356,11 @@ def process_video(
 
     validate_segment_lengths(segment_paths, segment_seconds)
 
+    if progress:
+        progress("load_model", {"model": model, "device": device, "computeType": compute_type})
     model_arg = resolve_model_argument(model, allow_download)
+    from faster_whisper import WhisperModel
+
     whisper_model = WhisperModel(model_arg, device=device, compute_type=compute_type)
     segments = transcribe_segments(
         model=whisper_model,
@@ -342,6 +369,7 @@ def process_video(
         language=language,
         beam_size=beam_size,
         vad_filter=vad_filter,
+        progress=progress,
     )
 
     srt_path = transcript_dir / f"{title}.srt"
@@ -349,6 +377,8 @@ def process_video(
     tutorial_path = analysis_dir / "tutorial.md"
     plan_path = analysis_dir / "implementation_plan.md"
 
+    if progress:
+        progress("write_files", {"subtitleCount": len(segments)})
     write_srt(srt_path, segments)
     write_transcript_md(transcript_path, title, segments)
     write_tutorial(tutorial_path, title, segments)
@@ -366,6 +396,18 @@ def process_video(
         subtitle_count=len(segments),
         duration_seconds=duration_seconds,
     )
+
+
+def add_windows_nvidia_dll_dirs() -> None:
+    if os.name != "nt" or not hasattr(os, "add_dll_directory"):
+        return
+    for base in map(Path, sys.path):
+        nvidia_dir = base / "nvidia"
+        if not nvidia_dir.is_dir():
+            continue
+        for candidate in nvidia_dir.glob("*/*"):
+            if candidate.is_dir() and any(candidate.glob("*.dll")):
+                os.add_dll_directory(str(candidate))
 
 
 def validate_segment_lengths(segment_paths: list[Path], max_seconds: int) -> None:

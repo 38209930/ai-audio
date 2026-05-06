@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "client:dev": "npm --workspace apps/windows-client run dev",
-    "client:build": "npm --workspace apps/windows-client run build"
+    "client:build": "npm --workspace apps/windows-client run build",
+    "client:portable": "powershell -ExecutionPolicy Bypass -File scripts/build_windows_portable.ps1"
   }
 }
-

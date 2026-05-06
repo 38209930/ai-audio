@@ -36,9 +36,9 @@ docs                      用户、开发、部署和产品文档
 
 客户端：
 
-- 当前是 Tauri + React 产品骨架。
-- 游客试用入口已经接入云端 API。
-- 模型管理、任务、帮助、更新和捐助页面为产品化入口。
+- Windows 便携客户端使用 Tauri + React。
+- 客户端通过 Tauri command 调用本地 Python engine。
+- 当前便携版默认本地免登录，云端登录能力保留为后续商业版能力。
 
 ## 3. 本地开发环境
 
@@ -163,18 +163,29 @@ apps/windows-client/
 当前页面：
 
 - 首页
-- 登录
 - 转写任务
 - 模型管理
 - 使用帮助
 - 版本更新
 - 捐助
 
-客户端配置：
+本地 engine 命令：
 
 ```text
-apps/windows-client/src/apiConfig.ts
+apps/local-engine/engine_cli.py
 ```
+
+Tauri 后端会优先从便携版运行目录查找：
+
+```text
+python/python.exe
+engine/engine_cli.py
+ffmpeg/bin/
+models/
+output/
+```
+
+开发模式下回退到仓库中的 engine 和系统 `python`、`ffmpeg`。
 
 捐助图片：
 
@@ -190,7 +201,45 @@ apps/windows-client/src/assets/donate/wechat-official-account.png
 - 用户视频、音频、字幕、文稿不上传云端。
 - 用户自有 LLM API Key 后续必须存本机安全存储，不上传云端。
 
-## 8. 验证命令
+## 8. Windows 便携版构建
+
+构建命令：
+
+```powershell
+npm run client:portable
+```
+
+输出目录：
+
+```text
+dist-portable/AI-Audio-Windows-Portable/
+```
+
+构建脚本会：
+
+1. 构建 React 前端。
+2. 构建 Tauri release 可执行文件。
+3. 准备 embedded Python runtime。
+4. 安装 `faster-whisper`、`huggingface_hub[cli]`。
+5. 下载并复制 `ffmpeg.exe`、`ffprobe.exe`。
+6. 复制本地 engine 和转写脚本。
+7. 创建空的 `models/` 和 `output/` 目录。
+
+如需把 Windows CUDA/cuDNN DLL 一起放入便携包，可在构建时传入 DLL 压缩包地址：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build_windows_portable.ps1 -CudaDllZipUrl "<cuda-dll-zip-url>"
+```
+
+脚本会把 `.dll` 文件复制到 `cuda/bin/`，客户端启动 engine 时会把该目录加入 DLL 搜索路径。若未提供该压缩包，GPU 模式仍依赖用户机器已有的 CUDA/cuDNN 运行库；CPU 模式不受影响。
+
+如只验证目录复制和客户端构建，不下载 Python/ffmpeg，可运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build_windows_portable.ps1 -SkipRuntimeDownload
+```
+
+## 9. 验证命令
 
 Python 编译检查：
 
@@ -202,6 +251,12 @@ Windows 客户端构建：
 
 ```bash
 npm --workspace apps/windows-client run build
+```
+
+Tauri 后端构建：
+
+```powershell
+cargo build --release --manifest-path apps/windows-client/src-tauri/Cargo.toml
 ```
 
 Git 空白检查：
@@ -216,7 +271,7 @@ ECS API smoke test：
 bash deploy/aliyun/smoke-test.sh http://127.0.0.1:8080
 ```
 
-## 9. 发布前检查
+## 10. 发布前检查
 
 发布前必须确认：
 
@@ -228,9 +283,9 @@ bash deploy/aliyun/smoke-test.sh http://127.0.0.1:8080
 - `.env`、密钥、密码、模型和媒体文件未进入 Git。
 - README、使用文档、部署文档与当前行为一致。
 
-## 10. 已知限制
+## 11. 已知限制
 
-- Windows 客户端当前仍是产品骨架，完整转写任务执行需要继续接入本地 engine。
+- Windows 便携版不内置模型文件，用户需首次下载或手动放入模型。
 - 手机号短信登录在短信资料未配置前不可用。
 - 教程和实施方案是规则化草稿，正式使用前建议人工修订。
 - macOS DMG 尚未开始实现。

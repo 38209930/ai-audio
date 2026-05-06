@@ -7,11 +7,12 @@ AI Audio is a local video-to-course-notes tool for creators, educators, and lear
 - Detailed course tutorial draft
 - Implementation-plan draft
 
-It includes a local Gradio Web UI and a command-line workflow. The default setup targets Windows + WSL2 + NVIDIA GPU, but the core Python workflow can also run on Linux.
+It includes a Windows portable client, a local Gradio Web UI, and a command-line workflow. The default Web UI setup targets Windows + WSL2 + NVIDIA GPU, while the portable client is designed to run without requiring users to install WSL, Python, or ffmpeg.
 
 ## Features
 
 - Local Web UI at `http://127.0.0.1:7860`
+- Windows portable client with local model management
 - GPU transcription with faster-whisper and CTranslate2
 - Automatic audio extraction and chunking with ffmpeg
 - Default 10-minute audio segments to reduce failure risk
@@ -51,6 +52,25 @@ Clone the repository:
 git clone https://github.com/38209930/ai-audio.git
 cd ai-audio
 ```
+
+Build the Windows portable client:
+
+```powershell
+npm install
+npm run client:portable
+```
+
+Building the portable client requires the Windows Tauri toolchain: Rust, Cargo, Microsoft C++ Build Tools, and the Windows SDK.
+
+Run:
+
+```text
+dist-portable/AI-Audio-Windows-Portable/AI Audio.exe
+```
+
+On first use, open **模型管理** and download one ASR model, or place model files manually under `models/<model-id>/`.
+
+## Web UI Quick Start
 
 Install inside WSL:
 
