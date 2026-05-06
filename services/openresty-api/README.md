@@ -23,7 +23,9 @@ openresty -p services/openresty-api -c conf/nginx.conf -s stop
 - `POST /v1/captcha/verify`
 - `POST /v1/auth/sms/send`
 - `POST /v1/auth/sms/login`
+- `POST /v1/auth/guest/login`
 - `POST /v1/auth/refresh`
+- `GET /v1/auth/session`
 - `GET /v1/models/catalog`
 - `POST /v1/devices/report`
 - `GET /v1/versions/check`

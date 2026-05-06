@@ -40,4 +40,13 @@ mysql \
   --default-character-set=utf8mb4 \
   < "${ROOT_DIR}/db/migrations/003_seed_app_versions.sql"
 
+mysql \
+  --host="${MYSQL_HOST}" \
+  --port="${MYSQL_PORT:-3306}" \
+  --user="${MYSQL_USER}" \
+  --password="${MYSQL_PASSWORD}" \
+  --database="${MYSQL_DATABASE}" \
+  --default-character-set=utf8mb4 \
+  < "${ROOT_DIR}/db/migrations/004_guest_trials.sql"
+
 echo "Migrations applied to ${MYSQL_DATABASE}."

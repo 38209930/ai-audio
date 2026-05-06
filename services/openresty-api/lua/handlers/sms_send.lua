@@ -16,6 +16,9 @@ end
 if not body.phone or body.phone == "" then
   return res.err(400, "MISSING_PHONE", "phone is required")
 end
+if not sms.is_configured() then
+  return res.err(503, "SMS_NOT_CONFIGURED", "SMS login is not configured yet")
+end
 if not body.captchaToken then
   return res.err(403, "CAPTCHA_REQUIRED", "Captcha token is required before sending SMS")
 end

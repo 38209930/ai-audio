@@ -5,6 +5,17 @@ local ok_http, http = pcall(require, "resty.http")
 
 local _M = {}
 
+function _M.is_configured()
+  if config.sms.dry_run then
+    return true
+  end
+  local aliyun = config.sms.aliyun
+  return aliyun.access_key_id ~= ""
+    and aliyun.access_key_secret ~= ""
+    and aliyun.sign_name ~= ""
+    and aliyun.template_code ~= ""
+end
+
 local function percent_encode(value)
   return ngx.escape_uri(tostring(value or ""))
     :gsub("%+", "%%20")

@@ -7,6 +7,8 @@ bash deploy/aliyun/smoke-test.sh http://127.0.0.1:8080
 bash deploy/aliyun/smoke-test.sh https://api.example.com
 ```
 
+The smoke test now checks guest login with a fixed `smoke-device`. If that device is manually expired in the database, use a different device ID for the smoke request.
+
 Captcha verification cannot be fully automated without reading the returned image and submitting coordinates. For manual testing:
 
 1. Call `/v1/captcha/challenge`.

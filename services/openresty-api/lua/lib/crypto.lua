@@ -50,6 +50,15 @@ local function base64url(value)
   return ngx.encode_base64(value):gsub("+", "-"):gsub("/", "_"):gsub("=+$", "")
 end
 
+local function base64url_decode(value)
+  value = tostring(value or ""):gsub("-", "+"):gsub("_", "/")
+  local remainder = #value % 4
+  if remainder > 0 then
+    value = value .. string.rep("=", 4 - remainder)
+  end
+  return ngx.decode_base64(value)
+end
+
 function _M.jwt(payload, ttl_seconds)
   local header = { alg = "HS256", typ = "JWT" }
   payload = payload or {}
@@ -59,6 +68,29 @@ function _M.jwt(payload, ttl_seconds)
   local signing_input = base64url(cjson.encode(header)) .. "." .. base64url(cjson.encode(payload))
   local signature = _M.hmac_hex(signing_input, config.secrets.jwt)
   return signing_input .. "." .. base64url(signature)
+end
+
+function _M.verify_jwt(token)
+  local header_part, payload_part, signature_part = tostring(token or ""):match("^([^.]+)%.([^.]+)%.([^.]+)$")
+  if not header_part or not payload_part or not signature_part then
+    return nil, "TOKEN_MALFORMED"
+  end
+
+  local signing_input = header_part .. "." .. payload_part
+  local expected = base64url(_M.hmac_hex(signing_input, config.secrets.jwt))
+  if expected ~= signature_part then
+    return nil, "TOKEN_SIGNATURE_INVALID"
+  end
+
+  local payload_json = base64url_decode(payload_part)
+  local payload = cjson.decode(payload_json or "")
+  if not payload then
+    return nil, "TOKEN_PAYLOAD_INVALID"
+  end
+  if payload.exp and tonumber(payload.exp) and tonumber(payload.exp) < ngx.time() then
+    return nil, "TOKEN_EXPIRED"
+  end
+  return payload
 end
 
 return _M

@@ -29,6 +29,66 @@ Error response:
 
 Returns service status and dependency status for MySQL and Redis.
 
+## POST /v1/auth/guest/login
+
+Starts or resumes a 30-day anonymous trial for the submitted device ID.
+
+Request:
+
+```json
+{
+  "deviceId": "device_xxx",
+  "osName": "Windows",
+  "osVersion": "11",
+  "appVersion": "0.1.0"
+}
+```
+
+Response:
+
+```json
+{
+  "accessToken": "jwt_access",
+  "expiresIn": 7200,
+  "guest": {
+    "id": "gst_xxx",
+    "trialStartedAt": "2026-05-06 10:00:00",
+    "trialExpiresAt": "2026-06-05 10:00:00",
+    "remainingDays": 30
+  }
+}
+```
+
+If the trial expired, the API returns `GUEST_TRIAL_EXPIRED`.
+
+## GET /v1/auth/session
+
+Requires `Authorization: Bearer <accessToken>`.
+
+Guest response:
+
+```json
+{
+  "type": "guest",
+  "isGuest": true,
+  "id": "gst_xxx",
+  "trialStartedAt": "2026-05-06 10:00:00",
+  "trialExpiresAt": "2026-06-05 10:00:00",
+  "remainingDays": 30
+}
+```
+
+User response:
+
+```json
+{
+  "type": "user",
+  "isGuest": false,
+  "id": "usr_xxx",
+  "phoneMask": "138****8000"
+}
+```
+
 ## POST /v1/captcha/challenge
 
 Request:
@@ -78,6 +138,8 @@ Response:
 
 ## POST /v1/auth/sms/send
 
+SMS login is closed until Aliyun SMS credentials are configured. If credentials are missing and `SMS_DRY_RUN=false`, the API returns `SMS_NOT_CONFIGURED`.
+
 Request:
 
 ```json
@@ -88,7 +150,7 @@ Request:
 }
 ```
 
-Response:
+Response after SMS is configured:
 
 ```json
 {
@@ -99,7 +161,7 @@ Response:
 }
 ```
 
-When `SMS_DRY_RUN=true`, the response also includes `devCode` for closed testing. Public deployments must set `SMS_DRY_RUN=false`.
+When `SMS_DRY_RUN=true`, the response also includes `devCode` for closed testing only.
 
 ## POST /v1/auth/sms/login
 
@@ -155,9 +217,9 @@ Returns latest version, update notes, force-update flag, and download URL.
 
 ## Security Behavior
 
+- Guest trials are server-side and keyed by `deviceId` for 30 days.
 - Captcha answers and captcha tokens are stored in Redis under `ai_audio:captcha:*`.
 - Rate-limit counters are stored in Redis under `ai_audio:rate:*`.
-- SMS sending requires a one-time `captchaToken`.
+- SMS sending requires a one-time `captchaToken` after SMS is configured.
 - Phone and IP values are persisted as `*_hash` plus masked display fields.
 - Logs must not include raw phone numbers, SMS codes, API keys, or raw IPs.
-

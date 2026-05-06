@@ -17,4 +17,22 @@ function _M.issue_pair(user_public_id)
   }
 end
 
+function _M.issue_guest(guest_public_id, ttl_seconds)
+  local ttl = math.min(config.jwt.access_ttl, tonumber(ttl_seconds) or config.jwt.access_ttl)
+  if ttl < 1 then
+    ttl = 1
+  end
+  return {
+    accessToken = crypto.jwt({
+      sub = guest_public_id,
+      type = "guest",
+    }, ttl),
+    expiresIn = ttl,
+  }
+end
+
+function _M.verify(raw_token)
+  return crypto.verify_jwt(raw_token)
+end
+
 return _M

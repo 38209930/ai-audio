@@ -28,6 +28,7 @@ end
 _M.api = {
   env = env("API_ENV", "local"),
   version = env("API_VERSION", "0.2.0"),
+  domain = env("API_DOMAIN", "localhost"),
 }
 
 _M.secrets = {
@@ -56,7 +57,7 @@ _M.redis = {
 }
 
 _M.sms = {
-  dry_run = env_bool("SMS_DRY_RUN", true),
+  dry_run = env_bool("SMS_DRY_RUN", false),
   provider = "aliyun",
   aliyun = {
     access_key_id = env("ALIYUN_SMS_ACCESS_KEY_ID", ""),

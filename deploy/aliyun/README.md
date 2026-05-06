@@ -12,6 +12,15 @@ sudo apt-get install -y git docker.io docker-compose-plugin mysql-client redis-t
 sudo systemctl enable --now docker nginx
 ```
 
+Deploy the repository to:
+
+```bash
+sudo mkdir -p /home/ai-audio/api
+sudo chown -R "$USER":"$USER" /home/ai-audio
+git clone https://github.com/38209930/ai-audio.git /home/ai-audio/api
+cd /home/ai-audio/api
+```
+
 Security group:
 
 - Open `80/tcp` and `443/tcp` to the public internet.
@@ -52,8 +61,8 @@ redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" -a "$REDIS_PASSWORD" ping
 Start OpenResty:
 
 ```bash
-cd deploy/aliyun
-docker compose -f docker-compose.aliyun.yml --env-file .env up -d --build
+cd /home/ai-audio/api
+bash deploy/aliyun/restart-api.sh
 ```
 
 Local health check on ECS:
@@ -64,23 +73,31 @@ bash deploy/aliyun/smoke-test.sh http://127.0.0.1:8080
 
 ## 5. HTTPS
 
-Issue a certificate after `api.example.com` points to the ECS public IP:
+Set `API_DOMAIN` in `deploy/aliyun/.env`. The deployed Nginx config uses:
 
-```bash
-sudo certbot --nginx -d api.example.com
+```text
+ssl_certificate /home/ssl/ccun.net.pem;
+ssl_certificate_key /home/ssl/ccun.net.key;
 ```
 
-If you manage Nginx manually, adapt `nginx-https.example.conf` and proxy to `127.0.0.1:8080`.
+Render and reload Nginx:
+
+```bash
+cd /home/ai-audio/api
+bash deploy/aliyun/render-nginx-conf.sh
+```
 
 ## 6. SMS
 
-During integration, keep:
+SMS login is optional until Aliyun SMS credentials are ready. Without credentials, `/v1/auth/sms/send` returns `SMS_NOT_CONFIGURED`.
+
+For closed local testing only, set:
 
 ```text
 SMS_DRY_RUN=true
 ```
 
-This returns `devCode` in `/v1/auth/sms/send` for closed testing. Before public testing:
+This returns `devCode` in `/v1/auth/sms/send`. Do not use dry-run for public testing. Before enabling phone login:
 
 ```text
 SMS_DRY_RUN=false
@@ -95,8 +112,9 @@ The SMS template must expose a `code` variable, for example: `Your verification 
 ## 7. Acceptance Checks
 
 - `https://api.example.com/health` returns `status=ok`.
-- MySQL migrations `001` to `003` are applied.
+- MySQL migrations `001` to `004` are applied.
 - Redis receives `ai_audio:captcha:*` and `ai_audio:rate:*` keys with TTL.
+- Guest login returns a 30-day trial token for a new device ID.
 - Captcha challenge returns a base64 SVG image and expires in 120 seconds.
 - SMS cannot be sent without a valid captcha token.
 - Login writes masked phone/IP fields to MySQL; logs do not contain raw phone, SMS code, API key, or raw IP.

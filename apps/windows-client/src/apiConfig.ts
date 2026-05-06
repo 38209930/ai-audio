@@ -7,6 +7,8 @@ export const API_ENDPOINTS = {
   captchaVerify: "/v1/captcha/verify",
   smsSend: "/v1/auth/sms/send",
   smsLogin: "/v1/auth/sms/login",
+  guestLogin: "/v1/auth/guest/login",
+  session: "/v1/auth/session",
   modelsCatalog: "/v1/models/catalog",
   versionsCheck: "/v1/versions/check",
   devicesReport: "/v1/devices/report",

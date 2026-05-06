@@ -24,5 +24,12 @@ function _M.client_ip()
   return ngx.var.remote_addr or "0.0.0.0"
 end
 
-return _M
+function _M.bearer_token()
+  local auth = ngx.req.get_headers()["authorization"] or ngx.req.get_headers()["Authorization"]
+  if not auth or auth == "" then
+    return nil
+  end
+  return auth:match("^[Bb]earer%s+(.+)$")
+end
 
+return _M

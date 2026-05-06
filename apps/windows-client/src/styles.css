@@ -127,3 +127,61 @@ button.primary {
   background: #2563eb;
 }
 
+button:disabled,
+input:disabled {
+  color: #6b7280;
+  cursor: not-allowed;
+  background: #f3f4f6;
+}
+
+.status {
+  display: inline-block;
+  margin: 8px 0 16px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: #374151;
+  background: #eef2ff;
+}
+
+.status.success {
+  color: #065f46;
+  background: #d1fae5;
+}
+
+.status.warning {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.disabled-panel {
+  opacity: 0.78;
+}
+
+.donate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 320px));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.qr-card img,
+.qr-placeholder {
+  width: 220px;
+  height: 220px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.qr-card img {
+  display: block;
+  object-fit: contain;
+  background: #fff;
+}
+
+.qr-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  background: #f9fafb;
+}
