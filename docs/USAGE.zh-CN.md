@@ -1,10 +1,13 @@
-# 使用手册
+# AI Audio 使用说明书
 
-本项目用于把课程视频转换成字幕、时间轴文稿、详细教程和实施方案。推荐通过可视化界面使用，也保留命令行方式。
+AI Audio 用于把课程视频转换为字幕、带时间轴的 Markdown 文稿、详细教程和实施方案。当前项目包含两种使用方式：
 
-## 1. 支持格式
+- 本地 Web UI：适合个人处理视频课程，运行在 Windows + WSL。
+- Windows 客户端雏形：包含游客试用、模型管理、转写任务、版本更新和捐助入口，后续会逐步接入完整本地引擎。
 
-推荐视频格式：
+## 1. 视频要求
+
+支持格式：
 
 - `.mp4`
 - `.mkv`
@@ -13,39 +16,36 @@
 - `.avi`
 - `.flv`
 
-最佳实践：
+建议：
 
 - 优先使用 `.mp4`。
-- 建议视频编码为 H.264，音频编码为 AAC。
-- 文件名尽量使用英文、数字和下划线，例如 `course_01.mp4`。
-- 中文文件名可以处理，但 WSL 终端可能显示乱码。
+- 推荐视频编码 H.264，音频编码 AAC。
 - 单个视频建议是一节课或一个主题。
+- 文件名可使用中文，但命令行排错时英文、数字、下划线更稳妥，例如 `course_01.mp4`。
 
 ## 2. 时长建议
 
-脚本会自动把音频切成 10 分钟以内的片段，所以 25 分钟或 40 分钟视频不需要手动拆分。
+系统会先提取音频，并按片段转写，不会把整条视频一次性放进显存。
 
-建议：
-
-- 0 到 60 分钟：可直接处理。
-- 60 到 120 分钟：可处理，但建议保持电脑空闲，避免休眠。
+- 0-60 分钟：可直接处理。
+- 60-120 分钟：可处理，建议电脑不要休眠，并预留足够磁盘空间。
 - 超过 120 分钟：建议按章节拆成多个视频。
 
-如果处理失败，可以在界面勾选“稳定模式”，或命令行使用：
+默认切片长度是 600 秒。若处理失败或显存压力较大，使用稳定模式：
 
 ```bash
 --segment-seconds 300 --compute-type int8_float16
 ```
 
-## 3. 启动可视化界面
+## 3. 本地 Web UI 使用流程
 
-在 PowerShell 中进入项目目录：
+在 PowerShell 进入项目目录：
 
 ```powershell
 cd E:\AI-PROJECT\ai-audio
 ```
 
-启动：
+启动界面：
 
 ```powershell
 .\启动可视化界面.ps1
@@ -57,31 +57,30 @@ cd E:\AI-PROJECT\ai-audio
 http://127.0.0.1:7860
 ```
 
-界面流程：
+操作步骤：
 
-1. 点击“检查模型”。
-2. 如果模型缺失，点击“检查/下载模型”。
-3. 上传一个视频。
-4. 保持默认参数：`zh`、`600 秒`、`cuda`、`float16`。
-5. 如果担心稳定性，勾选“稳定模式”。
-6. 点击“开始转写并生成文档”。
-7. 下载 SRT、Markdown 时间轴文稿、详细教程和实施方案。
+1. 检查 GPU 和模型状态。
+2. 如果模型缺失，使用界面下载，或手动放入模型目录。
+3. 上传一个视频文件。
+4. 默认参数建议保持：`language=zh`、`segment_seconds=600`、`device=cuda`、`compute_type=float16`。
+5. 如果需要更稳，选择稳定模式。
+6. 点击开始转写。
+7. 完成后下载 SRT、Markdown 时间轴文稿、详细教程和实施方案。
 
-## 4. 模型下载
+## 4. 模型文件
 
 默认模型：
 
-- `Systran/faster-whisper-large-v3`
+```text
+Systran/faster-whisper-large-v3
+```
 
-镜像地址：
+下载地址：
 
-- https://hf-mirror.com/Systran/faster-whisper-large-v3/tree/main
+- 镜像：https://hf-mirror.com/Systran/faster-whisper-large-v3/tree/main
+- 原始：https://huggingface.co/Systran/faster-whisper-large-v3
 
-原始地址：
-
-- https://huggingface.co/Systran/faster-whisper-large-v3
-
-本地模型目录：
+本地目录：
 
 ```text
 models/faster-whisper-large-v3/
@@ -99,7 +98,7 @@ vocabulary.json
 
 ## 5. 命令行使用
 
-在 WSL 中运行：
+在 WSL 中执行：
 
 ```bash
 source ~/venvs/faster-whisper/env.sh
@@ -120,6 +119,17 @@ python scripts/transcribe_course.py input/course_01.mp4 \
   --segment-seconds 300 \
   --device cuda \
   --compute-type int8_float16
+```
+
+CPU 模式：
+
+```bash
+python scripts/transcribe_course.py input/course_01.mp4 \
+  --language zh \
+  --model models/faster-whisper-large-v3 \
+  --segment-seconds 300 \
+  --device cpu \
+  --compute-type int8
 ```
 
 ## 6. 输出文件
@@ -144,31 +154,59 @@ analysis/implementation_plan.md
 说明：
 
 - `.srt`：字幕文件，可导入播放器或剪辑软件。
-- `.md`：带时间戳的文字稿。
-- `tutorial.md`：课程内容整理稿。
-- `implementation_plan.md`：实施方案草稿。
+- `.md`：带时间戳的转写文稿。
+- `tutorial.md`：按课程内容整理的教程草稿。
+- `implementation_plan.md`：按课程内容整理的实施方案草稿。
 
-## 7. 常见问题
+## 7. Windows 客户端说明
+
+当前 Windows 客户端是商业版产品骨架，已包含：
+
+- 游客试用 30 天。
+- 手机号登录占位，短信服务未配置前不开放。
+- 模型管理入口。
+- 转写任务入口。
+- 使用帮助和版本更新入口。
+- 捐助入口。
+
+游客试用按设备 ID 计算，服务端记录试用开始和到期时间。试用到期后，客户端会阻止创建新任务。
+
+捐助二维码素材路径：
+
+```text
+apps/windows-client/src/assets/donate/wechat-pay.png
+apps/windows-client/src/assets/donate/wechat-official-account.png
+```
+
+如果图片不存在，客户端会显示“二维码待配置”。
+
+## 8. 常见问题
 
 ### 显存不足
 
-使用稳定模式，或命令行参数：
+使用稳定模式：
 
 ```bash
 --segment-seconds 300 --compute-type int8_float16
 ```
 
+### GPU 不可见
+
+在 WSL 中检查：
+
+```bash
+nvidia-smi
+```
+
+如果不可见，先确认 Windows NVIDIA 驱动和 WSL GPU 支持是否正常。
+
 ### 字幕专有名词错误
 
-faster-whisper 对工具名、品牌名、人名可能识别不准，正式发布前建议人工校对。
+faster-whisper 对品牌名、工具名、人名可能识别不准，正式发布前建议人工校对。
 
-### 处理中文文件名失败
+### Web UI 打不开
 
-把视频改成英文文件名后重试。
-
-### Web UI 端口打不开
-
-检查服务是否运行：
+检查服务进程：
 
 ```powershell
 wsl.exe -d Ubuntu-22.04 -- pgrep -af scripts/app.py
@@ -179,3 +217,7 @@ wsl.exe -d Ubuntu-22.04 -- pgrep -af scripts/app.py
 ```powershell
 wsl.exe -d Ubuntu-22.04 -- pkill -f scripts/app.py
 ```
+
+### 域名访问失败
+
+如果 ECS 上 `curl --resolve <域名>:443:127.0.0.1 https://<域名>/health` 正常，但公网访问失败，通常是 DNS A 记录尚未生效。

@@ -118,12 +118,13 @@ Large media files, generated outputs, and model files are ignored by Git.
 
 ## Documentation
 
-- Chinese user guide: [docs/USAGE.zh-CN.md](docs/USAGE.zh-CN.md)
-- Development guide: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+- 使用说明书: [docs/USAGE.zh-CN.md](docs/USAGE.zh-CN.md)
+- 开发文档: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+- 部署文档: [docs/DEPLOYMENT.zh-CN.md](docs/DEPLOYMENT.zh-CN.md)
 - Contributing guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Commercial product roadmap: [docs/product/IMPLEMENTATION_PLAN.md](docs/product/IMPLEMENTATION_PLAN.md)
 - Product architecture: [docs/product/ARCHITECTURE.md](docs/product/ARCHITECTURE.md)
-- Aliyun deployment guide: [deploy/aliyun/README.md](deploy/aliyun/README.md)
+- Aliyun deployment scripts: [deploy/aliyun/README.md](deploy/aliyun/README.md)
 
 ## Commercial Desktop Roadmap
 

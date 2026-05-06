@@ -1,129 +1,149 @@
-# Aliyun ECS Deployment
+# 阿里云 ECS 部署手册
 
-This runbook deploys the OpenResty/Lua API for the commercial Windows client.
+本目录包含 AI Audio 云端 API 在阿里云 ECS 上部署所需的脚本和模板。完整说明见：
 
-## 1. ECS
-
-Install base packages on Ubuntu:
-
-```bash
-sudo apt-get update
-sudo apt-get install -y git docker.io docker-compose-plugin mysql-client redis-tools nginx certbot python3-certbot-nginx
-sudo systemctl enable --now docker nginx
+```text
+docs/DEPLOYMENT.zh-CN.md
 ```
 
-Deploy the repository to:
+## 部署约定
+
+- 项目目录：`/home/ai-audio/api`
+- API 容器：`ai-audio-openresty`
+- 容器监听：`127.0.0.1:8080`
+- HTTPS 入口：ECS Nginx
+- SSL 证书：`/home/ssl/ccun.net.pem`
+- SSL 私钥：`/home/ssl/ccun.net.key`
+- 推荐 Redis：ECS 本机 Redis，`REDIS_HOST=172.17.0.1`
+
+## 文件说明
+
+```text
+env.example                 环境变量模板，复制为 .env 后填写
+docker-compose.aliyun.yml   OpenResty API 容器编排
+nginx-https.example.conf    Nginx HTTPS 反代模板
+apply-migrations.sh         执行 MySQL migrations
+render-nginx-conf.sh        根据 .env 渲染 Nginx 配置并 reload
+restart-api.sh              构建、重启 API，并执行 smoke test
+smoke-test.sh               本机 API 验收测试
+```
+
+`.env` 包含密钥和服务器信息，已被 `.gitignore` 忽略，禁止提交。
+
+## 快速部署
 
 ```bash
 sudo mkdir -p /home/ai-audio/api
 sudo chown -R "$USER":"$USER" /home/ai-audio
 git clone https://github.com/38209930/ai-audio.git /home/ai-audio/api
 cd /home/ai-audio/api
-```
-
-Security group:
-
-- Open `80/tcp` and `443/tcp` to the public internet.
-- Keep `22/tcp` restricted to your own IP.
-- Do not expose MySQL or Redis publicly.
-
-## 2. MySQL
-
-Create database and least-privilege API user:
-
-```sql
-CREATE DATABASE ai_audio CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'ai_audio_api'@'%' IDENTIFIED BY 'replace-with-strong-password';
-GRANT SELECT, INSERT, UPDATE, DELETE ON ai_audio.* TO 'ai_audio_api'@'%';
-FLUSH PRIVILEGES;
-```
-
-Prefer Aliyun private network access from ECS to RDS. Then run:
-
-```bash
 cp deploy/aliyun/env.example deploy/aliyun/.env
 vim deploy/aliyun/.env
 bash deploy/aliyun/apply-migrations.sh
+bash deploy/aliyun/restart-api.sh
 ```
 
-## 3. Redis
+## Redis 推荐配置
 
-Use Redis for short-lived captcha answers, captcha tokens, rate limits, SMS counters, and future token blacklist keys. All API keys use the `ai_audio:*` prefix.
+ECS 本机 Redis 推荐绑定：
 
-Recommended ECS-local Redis configuration:
+```text
+bind 127.0.0.1 ::1 172.17.0.1
+protected-mode yes
+requirepass <REDIS_PASSWORD>
+```
+
+`.env` 中配置：
 
 ```text
 REDIS_HOST=172.17.0.1
 REDIS_PORT=6379
 ```
 
-Bind Redis to `127.0.0.1 ::1 172.17.0.1` and keep `requirepass` enabled. If you use an Aliyun managed Redis endpoint instead, ensure the ECS can reach it from both the host and Docker container network.
+## HTTPS
 
-Validate connectivity:
-
-```bash
-redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" -a "$REDIS_PASSWORD" ping
-```
-
-## 4. API Service
-
-Start OpenResty:
-
-```bash
-cd /home/ai-audio/api
-bash deploy/aliyun/restart-api.sh
-```
-
-Local health check on ECS:
-
-```bash
-bash deploy/aliyun/smoke-test.sh http://127.0.0.1:8080
-```
-
-## 5. HTTPS
-
-Set `API_DOMAIN` in `deploy/aliyun/.env`. The deployed Nginx config uses:
+`.env` 中设置：
 
 ```text
-ssl_certificate /home/ssl/ccun.net.pem;
-ssl_certificate_key /home/ssl/ccun.net.key;
+API_DOMAIN=<你的 API 域名>
 ```
 
-Render and reload Nginx:
+渲染 Nginx：
 
 ```bash
 cd /home/ai-audio/api
 bash deploy/aliyun/render-nginx-conf.sh
 ```
 
-## 6. SMS
+公网 DNS 需要添加：
 
-SMS login is optional until Aliyun SMS credentials are ready. Without credentials, `/v1/auth/sms/send` returns `SMS_NOT_CONFIGURED`.
+```text
+<API_DOMAIN> -> ECS 公网 IP
+```
 
-For closed local testing only, set:
+如果 DNS 尚未生效，可以在 ECS 上验证：
+
+```bash
+curl -k -fsS --resolve <API_DOMAIN>:443:127.0.0.1 https://<API_DOMAIN>/health
+```
+
+## 验收
+
+```bash
+cd /home/ai-audio/api
+bash deploy/aliyun/smoke-test.sh http://127.0.0.1:8080
+```
+
+验收通过时应满足：
+
+- `/health` 返回 `status=ok`
+- MySQL 为 `ok`
+- Redis 为 `ok`
+- 游客登录返回 30 天试用 token
+- 验证码 challenge 返回 base64 SVG
+
+## 短信登录
+
+短信资料未配置时：
+
+```text
+SMS_DRY_RUN=false
+ALIYUN_SMS_ACCESS_KEY_ID=
+ALIYUN_SMS_ACCESS_KEY_SECRET=
+ALIYUN_SMS_SIGN_NAME=
+ALIYUN_SMS_TEMPLATE_CODE=
+```
+
+此时 `/v1/auth/sms/send` 返回 `SMS_NOT_CONFIGURED`，不影响游客试用。
+
+仅闭环测试时可设置：
 
 ```text
 SMS_DRY_RUN=true
 ```
 
-This returns `devCode` in `/v1/auth/sms/send`. Do not use dry-run for public testing. Before enabling phone login:
+该模式会返回 `devCode`，不得用于公网测试。
 
-```text
-SMS_DRY_RUN=false
-ALIYUN_SMS_ACCESS_KEY_ID=...
-ALIYUN_SMS_ACCESS_KEY_SECRET=...
-ALIYUN_SMS_SIGN_NAME=...
-ALIYUN_SMS_TEMPLATE_CODE=...
+## 维护
+
+更新并重启：
+
+```bash
+cd /home/ai-audio/api
+git pull
+bash deploy/aliyun/apply-migrations.sh
+bash deploy/aliyun/restart-api.sh
 ```
 
-The SMS template must expose a `code` variable, for example: `Your verification code is ${code}`.
+查看日志：
 
-## 7. Acceptance Checks
+```bash
+docker logs -f ai-audio-openresty
+```
 
-- `https://api.example.com/health` returns `status=ok`.
-- MySQL migrations `001` to `004` are applied.
-- Redis receives `ai_audio:captcha:*` and `ai_audio:rate:*` keys with TTL.
-- Guest login returns a 30-day trial token for a new device ID.
-- Captcha challenge returns a base64 SVG image and expires in 120 seconds.
-- SMS cannot be sent without a valid captcha token.
-- Login writes masked phone/IP fields to MySQL; logs do not contain raw phone, SMS code, API key, or raw IP.
+容器状态：
+
+```bash
+cd /home/ai-audio/api/deploy/aliyun
+docker compose -f docker-compose.aliyun.yml --env-file .env ps
+```
