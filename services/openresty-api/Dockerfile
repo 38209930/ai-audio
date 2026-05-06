@@ -1,11 +1,13 @@
-FROM openresty/openresty:alpine
+FROM openresty/openresty:jammy
 
-RUN apk add --no-cache ca-certificates curl git openssl perl \
+RUN apt-get update \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates curl git openssl perl \
   && opm get openresty/lua-resty-redis \
   && opm get openresty/lua-resty-mysql \
   && opm get ledgetech/lua-resty-http \
-  && opm get fffonion/lua-resty-openssl
+  && opm get fffonion/lua-resty-openssl \
+  && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /usr/local/openresty/nginx
+WORKDIR /opt/ai-audio-api
 
-CMD ["openresty", "-g", "daemon off;", "-p", "/usr/local/openresty/nginx", "-c", "conf/nginx.conf"]
+CMD ["/usr/local/openresty/bin/openresty", "-g", "daemon off;", "-p", "/opt/ai-audio-api", "-c", "conf/nginx.conf"]

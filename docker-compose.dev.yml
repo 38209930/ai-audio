@@ -46,7 +46,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./services/openresty-api:/usr/local/openresty/nginx:ro
+      - ./services/openresty-api:/opt/ai-audio-api:ro
 
 volumes:
   ai_audio_mysql:

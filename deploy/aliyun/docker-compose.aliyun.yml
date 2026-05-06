@@ -8,9 +8,7 @@ services:
       - .env
     ports:
       - "127.0.0.1:8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
-      - ../../services/openresty-api:/usr/local/openresty/nginx:ro
-      - ai_audio_openresty_logs:/usr/local/openresty/nginx/logs
-
-volumes:
-  ai_audio_openresty_logs:
+      - ../../services/openresty-api:/opt/ai-audio-api:ro

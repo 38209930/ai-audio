@@ -50,6 +50,15 @@ bash deploy/aliyun/apply-migrations.sh
 
 Use Redis for short-lived captcha answers, captcha tokens, rate limits, SMS counters, and future token blacklist keys. All API keys use the `ai_audio:*` prefix.
 
+Recommended ECS-local Redis configuration:
+
+```text
+REDIS_HOST=172.17.0.1
+REDIS_PORT=6379
+```
+
+Bind Redis to `127.0.0.1 ::1 172.17.0.1` and keep `requirepass` enabled. If you use an Aliyun managed Redis endpoint instead, ensure the ECS can reach it from both the host and Docker container network.
+
 Validate connectivity:
 
 ```bash
