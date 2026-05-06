@@ -10,6 +10,14 @@ The project has three layers:
 - `scripts/app.py`: Gradio Web UI and upload/model-management wrapper.
 - `scripts/setup_wsl_faster_whisper.sh`: WSL environment bootstrap.
 
+The commercial desktop roadmap adds:
+
+- `apps/windows-client`: Tauri + React Windows client.
+- `apps/local-engine`: desktop-facing local engine wrapper.
+- `services/openresty-api`: OpenResty/Lua cloud API.
+- `db/migrations`: MySQL schema.
+- `docs/product`: versioned implementation plan and product contracts.
+
 The transcription pipeline:
 
 1. Validates the input video and model directory.

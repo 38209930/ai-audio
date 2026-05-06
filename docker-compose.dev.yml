@@ -1,0 +1,29 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: ai-audio-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ai_audio_root
+      MYSQL_DATABASE: ai_audio
+      MYSQL_USER: ai_audio
+      MYSQL_PASSWORD: ai_audio_dev
+    ports:
+      - "3306:3306"
+    volumes:
+      - ai_audio_mysql:/var/lib/mysql
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+
+  openresty:
+    image: openresty/openresty:alpine
+    container_name: ai-audio-openresty
+    depends_on:
+      - mysql
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./services/openresty-api:/usr/local/openresty/nginx:ro
+    command: ["openresty", "-g", "daemon off;", "-p", "/usr/local/openresty/nginx", "-c", "conf/nginx.conf"]
+
+volumes:
+  ai_audio_mysql:
+

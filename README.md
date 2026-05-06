@@ -121,6 +121,21 @@ Large media files, generated outputs, and model files are ignored by Git.
 - Chinese user guide: [docs/USAGE.zh-CN.md](docs/USAGE.zh-CN.md)
 - Development guide: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 - Contributing guide: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Commercial product roadmap: [docs/product/IMPLEMENTATION_PLAN.md](docs/product/IMPLEMENTATION_PLAN.md)
+- Product architecture: [docs/product/ARCHITECTURE.md](docs/product/ARCHITECTURE.md)
+
+## Commercial Desktop Roadmap
+
+The current repository now includes a staged commercial desktop plan:
+
+- Windows first with Tauri + React
+- OpenResty/Lua cloud API
+- MySQL account, SMS, model catalog, and version data
+- Required model management before transcription
+- Optional user-configured LLM API for `solution.md`
+- Future subtitle translation and macOS DMG support
+
+The original local Gradio tool and CLI remain available while the desktop product is developed.
 
 ## Model Files
 

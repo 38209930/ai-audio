@@ -1,0 +1,13 @@
+{
+  "name": "ai-audio-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/windows-client"
+  ],
+  "scripts": {
+    "client:dev": "npm --workspace apps/windows-client run dev",
+    "client:build": "npm --workspace apps/windows-client run build"
+  }
+}
+
