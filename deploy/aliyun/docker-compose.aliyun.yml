@@ -1,0 +1,16 @@
+services:
+  openresty:
+    build:
+      context: ../../services/openresty-api
+    container_name: ai-audio-openresty
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ../../services/openresty-api:/usr/local/openresty/nginx:ro
+      - ai_audio_openresty_logs:/usr/local/openresty/nginx/logs
+
+volumes:
+  ai_audio_openresty_logs:

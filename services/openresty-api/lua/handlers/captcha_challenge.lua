@@ -1,6 +1,7 @@
-local cjson = require "cjson.safe"
 local req = require "lib.request"
 local privacy = require "lib.privacy"
+local captcha = require "lib.captcha"
+local limiter = require "middleware.rate_limit"
 local res = require "lib.json_response"
 
 local body, err = req.json_body()
@@ -9,19 +10,20 @@ if not body then
 end
 
 local phone = body.phone or ""
-local challenge_id = string.format("cap_%d_%d", ngx.now() * 1000, math.random(100000, 999999))
-local prompt = {"学", "习", "工", "具"}
+local ip = req.client_ip()
+local phone_hash = privacy.phone_hash(phone)
+local ip_hash = privacy.ip_hash(ip)
 
-ngx.shared.captcha_store:set(challenge_id, cjson.encode({
-  phoneHash = privacy.pseudo_hash(phone),
-  prompt = prompt,
-  used = false,
-}), 120)
+local ok_ip = limiter.hit("captcha:ip:" .. ip_hash, 30, 3600)
+if not ok_ip then
+  return res.err(429, "CAPTCHA_IP_RATE_LIMITED", "Too many captcha requests from this network")
+end
 
-res.ok({
-  challengeId = challenge_id,
-  imageBase64 = "data:image/png;base64,TODO_GENERATE_CLICK_CHARACTER_IMAGE",
-  prompt = "请按顺序点击：学 习 工 具",
-  expiresIn = 120,
-})
+local result, create_err = captcha.create(phone_hash, ip_hash)
+if not result then
+  ngx.log(ngx.ERR, "captcha create failed: ", create_err)
+  return res.err(503, "CAPTCHA_CREATE_FAILED", "Captcha service unavailable")
+end
+
+res.ok(result)
 

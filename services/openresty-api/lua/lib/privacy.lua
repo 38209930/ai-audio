@@ -1,3 +1,5 @@
+local crypto = require "lib.crypto"
+
 local _M = {}
 
 function _M.mask_phone(phone)
@@ -18,12 +20,20 @@ function _M.mask_ip(ip)
   return ip:gsub(":[%x:]+$", ":****")
 end
 
-function _M.pseudo_hash(value)
-  -- Placeholder for HMAC-SHA256(value, server_secret).
-  -- Production implementation must use resty.openssl.hmac or equivalent.
-  value = tostring(value or "")
-  return "hash_pending_" .. tostring(#value)
+function _M.hash(value, namespace)
+  return crypto.hmac_hex(tostring(namespace or "value") .. ":" .. tostring(value or ""))
+end
+
+function _M.phone_hash(phone)
+  return _M.hash(phone, "phone")
+end
+
+function _M.ip_hash(ip)
+  return _M.hash(ip, "ip")
+end
+
+function _M.code_hash(phone, code)
+  return _M.hash(tostring(phone or "") .. ":" .. tostring(code or ""), "sms-code")
 end
 
 return _M
-

@@ -13,17 +13,41 @@ services:
       - ai_audio_mysql:/var/lib/mysql
       - ./db/migrations:/docker-entrypoint-initdb.d:ro
 
+  redis:
+    image: redis:7-alpine
+    container_name: ai-audio-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - ai_audio_redis:/data
+
   openresty:
-    image: openresty/openresty:alpine
+    build:
+      context: ./services/openresty-api
     container_name: ai-audio-openresty
     depends_on:
       - mysql
+      - redis
+    environment:
+      API_ENV: local
+      API_VERSION: 0.2.0
+      HMAC_SECRET: dev-hmac-secret-change-me
+      JWT_SECRET: dev-jwt-secret-change-me
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ai_audio
+      MYSQL_USER: ai_audio
+      MYSQL_PASSWORD: ai_audio_dev
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      SMS_DRY_RUN: "true"
     ports:
       - "8080:8080"
     volumes:
       - ./services/openresty-api:/usr/local/openresty/nginx:ro
-    command: ["openresty", "-g", "daemon off;", "-p", "/usr/local/openresty/nginx", "-c", "conf/nginx.conf"]
 
 volumes:
   ai_audio_mysql:
-
+  ai_audio_redis:

@@ -123,6 +123,7 @@ Large media files, generated outputs, and model files are ignored by Git.
 - Contributing guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Commercial product roadmap: [docs/product/IMPLEMENTATION_PLAN.md](docs/product/IMPLEMENTATION_PLAN.md)
 - Product architecture: [docs/product/ARCHITECTURE.md](docs/product/ARCHITECTURE.md)
+- Aliyun deployment guide: [deploy/aliyun/README.md](deploy/aliyun/README.md)
 
 ## Commercial Desktop Roadmap
 
