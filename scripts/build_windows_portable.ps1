@@ -34,6 +34,14 @@ function Download-File([string]$Url, [string]$Target) {
     return
   }
   Write-Host "Downloading $Url"
+  $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+  if ($curl) {
+    & $curl.Source -L --retry 5 --retry-delay 5 --connect-timeout 30 -o $Target $Url
+    if ($LASTEXITCODE -eq 0 -and (Test-Path $Target)) {
+      return
+    }
+    Remove-Item -LiteralPath $Target -Force -ErrorAction SilentlyContinue
+  }
   Invoke-WebRequest -Uri $Url -OutFile $Target
 }
 

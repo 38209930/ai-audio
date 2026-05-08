@@ -5,10 +5,6 @@ description = "AI Audio Windows client"
 authors = ["AI Audio contributors"]
 edition = "2021"
 
-[lib]
-name = "ai_audio_windows_client_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
-
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 

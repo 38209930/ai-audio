@@ -2,10 +2,13 @@ __pycache__/
 *.py[cod]
 .venv/
 logs/
+.cache/
 node_modules/
 dist/
+dist-portable/
 target/
 .tauri/
+apps/windows-client/src-tauri/gen/
 .env
 .env.*
 output/
