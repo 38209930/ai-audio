@@ -29,6 +29,19 @@ function New-CleanDirectory([string]$Path) {
   New-Item -ItemType Directory -Force -Path $Path | Out-Null
 }
 
+function Initialize-PortableDirectory {
+  New-Item -ItemType Directory -Force -Path $PortableRoot | Out-Null
+  Remove-Item -LiteralPath (Join-Path $PortableRoot "AI Audio.exe") -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath (Join-Path $PortableRoot "README.txt") -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath (Join-Path $PortableRoot "engine") -Recurse -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath (Join-Path $PortableRoot "scripts") -Recurse -Force -ErrorAction SilentlyContinue
+  if (-not $SkipRuntimeDownload) {
+    Remove-Item -LiteralPath $PythonDir -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $FfmpegDir -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $CudaDir -Recurse -Force -ErrorAction SilentlyContinue
+  }
+}
+
 function Download-File([string]$Url, [string]$Target) {
   if (Test-Path $Target) {
     return
@@ -45,13 +58,10 @@ function Download-File([string]$Url, [string]$Target) {
   Invoke-WebRequest -Uri $Url -OutFile $Target
 }
 
-Write-Host "Building frontend"
-npm --workspace apps/windows-client run build
-
 Write-Host "Building Tauri executable"
-cargo build --release --manifest-path (Join-Path $TauriDir "Cargo.toml")
+npm --workspace apps/windows-client run tauri -- build --no-bundle
 
-New-CleanDirectory $PortableRoot
+Initialize-PortableDirectory
 New-Item -ItemType Directory -Force -Path $CacheDir | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $PortableRoot "engine") | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $PortableRoot "scripts") | Out-Null
