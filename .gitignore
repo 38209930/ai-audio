@@ -3,6 +3,7 @@ __pycache__/
 .venv/
 logs/
 .cache/
+downloads/
 node_modules/
 dist/
 dist-portable/

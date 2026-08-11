@@ -25,6 +25,8 @@ REQUIRED_MODEL_FILES = (
     "vocabulary.json",
 )
 
+_WINDOWS_DLL_DIRECTORY_HANDLES: list[object] = []
+
 
 @dataclass
 class TranscriptSegment:
@@ -407,7 +409,10 @@ def add_windows_nvidia_dll_dirs() -> None:
             continue
         for candidate in nvidia_dir.glob("*/*"):
             if candidate.is_dir() and any(candidate.glob("*.dll")):
-                os.add_dll_directory(str(candidate))
+                path_text = str(candidate)
+                os.environ["PATH"] = path_text + os.pathsep + os.environ.get("PATH", "")
+                handle = os.add_dll_directory(path_text)
+                _WINDOWS_DLL_DIRECTORY_HANDLES.append(handle)
 
 
 def validate_segment_lengths(segment_paths: list[Path], max_seconds: int) -> None:
