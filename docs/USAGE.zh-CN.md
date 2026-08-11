@@ -1,46 +1,35 @@
 # AI Audio 使用说明书
 
-AI Audio 用于把课程视频转换为字幕、带时间轴的 Markdown 文稿、详细教程和实施方案。当前项目包含三种使用方式：
+AI Audio 是一个本地视频课程转写工具，可以把课程视频转换为：
 
-- Windows 便携客户端：适合普通用户，解压后运行，不要求安装 WSL、Python 或 ffmpeg。
-- 本地 Web UI：适合个人处理视频课程，运行在 Windows + WSL。
-- 命令行：适合开发者和批处理场景。
+- `SRT` 字幕文件
+- 带时间轴的 Markdown 文稿
+- 详细教程草稿
+- 实施方案草稿
 
-## 1. 视频要求
+当前推荐普通用户使用 **Windows 便携客户端**。开发者或高级用户也可以使用本地 Web UI 和命令行。
 
-支持格式：
+## 1. 适用场景
 
-- `.mp4`
-- `.mkv`
-- `.mov`
-- `.webm`
-- `.avi`
-- `.flv`
+AI Audio 适合处理：
 
-建议：
+- 视频课程
+- 录屏教程
+- 会议录制
+- 访谈视频
+- 需要二次整理成学习笔记或执行方案的视频资料
 
-- 优先使用 `.mp4`。
-- 推荐视频编码 H.264，音频编码 AAC。
-- 单个视频建议是一节课或一个主题。
-- 文件名可使用中文，但命令行排错时英文、数字、下划线更稳妥，例如 `course_01.mp4`。
+不适合直接处理：
 
-## 2. 时长建议
+- 背景噪声非常大的视频
+- 多人同时说话严重重叠的视频
+- 音频缺失、音轨损坏或加密保护的视频文件
 
-系统会先提取音频，并按片段转写，不会把整条视频一次性放进显存。
+## 2. Windows 便携版快速开始
 
-- 0-60 分钟：可直接处理。
-- 60-120 分钟：可处理，建议电脑不要休眠，并预留足够磁盘空间。
-- 超过 120 分钟：建议按章节拆成多个视频。
+便携版无需安装，解压后即可运行。
 
-默认切片长度是 600 秒。若处理失败或显存压力较大，使用稳定模式：
-
-```bash
---segment-seconds 300 --compute-type int8_float16
-```
-
-## 3. Windows 便携版使用流程
-
-便携版目录结构：
+目录结构：
 
 ```text
 AI-Audio-Windows-Portable/
@@ -52,12 +41,69 @@ AI-Audio-Windows-Portable/
   output/
 ```
 
-启动：
+使用步骤：
 
-1. 解压便携包。
+1. 解压 `AI-Audio-Windows-Portable`。
 2. 双击 `AI Audio.exe`。
-3. 首次进入“模型管理”，下载一个 ASR 模型，或手动放入模型文件。
-4. 回到“转写任务”，选择视频并开始处理。
+3. 进入“模型管理”，下载一个 ASR 模型，或手动放入模型文件。
+4. 进入“转写任务”，选择视频文件。
+5. 确认语言、设备、精度、切片秒数。
+6. 点击“开始转写并生成文档”。
+7. 完成后点击“打开目录”查看结果。
+
+便携版默认本地免登录使用，不需要手机号、验证码或游客试用 token。
+
+## 3. 视频文件要求
+
+支持格式：
+
+- `.mp4`
+- `.mkv`
+- `.mov`
+- `.webm`
+- `.avi`
+- `.flv`
+
+推荐格式：
+
+- 视频编码：H.264
+- 音频编码：AAC
+- 容器格式：`.mp4`
+
+文件名可以使用中文。若命令行排错，建议使用英文、数字、下划线命名，例如：
+
+```text
+course_01.mp4
+```
+
+## 4. 视频时长建议
+
+AI Audio 会先提取音频，再按片段转写，不会把整条视频一次性放入显存。
+
+建议：
+
+- `0-60 分钟`：可直接处理。
+- `60-120 分钟`：可处理，建议保持电脑不要休眠。
+- `超过 120 分钟`：建议按章节拆成多个视频。
+
+默认切片长度：
+
+```text
+600 秒
+```
+
+如果显存不足、处理失败或机器不稳定，建议开启稳定模式：
+
+```text
+切片秒数：300
+计算精度：int8_float16
+```
+
+CPU 模式也可使用，但速度会明显慢于 NVIDIA GPU。
+
+## 5. 模型准备
+
+首次使用必须准备 ASR 模型，否则无法开始转写。
 
 默认模型目录：
 
@@ -65,7 +111,7 @@ AI-Audio-Windows-Portable/
 models/
 ```
 
-模型会按模型名称放入子目录，例如：
+模型会放入对应子目录：
 
 ```text
 models/faster-whisper-large-v3/
@@ -75,23 +121,99 @@ models/faster-whisper-small/
 
 模型清单：
 
-- `Systran/faster-whisper-large-v3`：质量优先，推荐 NVIDIA GPU。
-- `Systran/faster-whisper-medium`：速度和质量折中。
-- `Systran/faster-whisper-small`：CPU、低显存或快速测试备用。
+| 模型 | 适用场景 | 建议硬件 |
+| --- | --- | --- |
+| `Systran/faster-whisper-large-v3` | 默认推荐，质量优先 | NVIDIA GPU，显存建议 8GB+ |
+| `Systran/faster-whisper-medium` | 速度和质量折中 | NVIDIA GPU 或较强 CPU |
+| `Systran/faster-whisper-small` | 低显存、CPU、快速测试 | CPU 可用，GPU 更快 |
 
-便携版不内置模型文件，避免包体过大。软件内下载优先使用：
+下载地址：
+
+- large-v3 镜像：https://hf-mirror.com/Systran/faster-whisper-large-v3/tree/main
+- large-v3 原始：https://huggingface.co/Systran/faster-whisper-large-v3
+- medium 镜像：https://hf-mirror.com/Systran/faster-whisper-medium/tree/main
+- medium 原始：https://huggingface.co/Systran/faster-whisper-medium
+- small 镜像：https://hf-mirror.com/Systran/faster-whisper-small/tree/main
+- small 原始：https://huggingface.co/Systran/faster-whisper-small
+
+每个模型目录必须包含：
 
 ```text
-https://hf-mirror.com
+config.json
+model.bin
+preprocessor_config.json
+tokenizer.json
+vocabulary.json
 ```
 
-如果软件下载失败，可打开界面中的镜像下载页或 Hugging Face 原始页，手动下载必需文件到对应目录，然后点击“重新扫描”。
+如果软件内下载失败，可以手动下载以上文件到对应目录，然后在“模型管理”中点击“重新扫描”。
 
-便携版默认本地免登录使用，不需要手机号、验证码或游客试用 token。
+## 6. 转写参数说明
 
-NVIDIA GPU 模式需要显卡驱动和 CUDA/cuDNN 运行库可被本地 engine 加载。若 GPU 模式失败，可先切换 CPU 模式或稳定模式完成处理。
+常用参数：
 
-## 4. 本地 Web UI 使用流程
+| 参数 | 推荐值 | 说明 |
+| --- | --- | --- |
+| 语言代码 | `zh` | 中文视频使用 `zh`，留空可自动检测 |
+| 切片秒数 | `600` | 默认每段 10 分钟以内 |
+| 设备 | `cuda` | NVIDIA GPU 用户推荐 |
+| 计算精度 | `float16` | GPU 默认推荐 |
+| 稳定模式 | 关闭 | 失败或显存不足时开启 |
+
+稳定模式会自动使用：
+
+```text
+切片秒数：300
+计算精度：int8_float16
+```
+
+CPU 模式建议：
+
+```text
+设备：cpu
+计算精度：int8
+切片秒数：300
+```
+
+## 7. 输出文件说明
+
+默认输出目录：
+
+```text
+output/<视频名>/
+```
+
+输出结构：
+
+```text
+output/<视频名>/
+  audio/
+    full.wav
+    segments/
+      part_000.wav
+      part_001.wav
+  transcripts/
+    <视频名>.srt
+    <视频名>.md
+  analysis/
+    tutorial.md
+    implementation_plan.md
+```
+
+文件说明：
+
+- `transcripts/<视频名>.srt`：字幕文件，可导入播放器或剪辑软件。
+- `transcripts/<视频名>.md`：带时间轴的 Markdown 转写文稿。
+- `analysis/tutorial.md`：根据字幕整理出的详细教程草稿。
+- `analysis/implementation_plan.md`：根据课程内容整理出的实施方案草稿。
+- `audio/full.wav`：从视频提取出的完整音频。
+- `audio/segments/`：自动切分后的音频片段。
+
+生成的教程和实施方案是规则化草稿，正式发布或交付前建议人工校对和润色。
+
+## 8. 本地 Web UI 使用
+
+Web UI 适合开发者或已配置 WSL 环境的用户。
 
 在 PowerShell 进入项目目录：
 
@@ -99,7 +221,7 @@ NVIDIA GPU 模式需要显卡驱动和 CUDA/cuDNN 运行库可被本地 engine �
 cd E:\AI-PROJECT\ai-audio
 ```
 
-启动界面：
+启动：
 
 ```powershell
 .\启动可视化界面.ps1
@@ -111,48 +233,19 @@ cd E:\AI-PROJECT\ai-audio
 http://127.0.0.1:7860
 ```
 
-操作步骤：
+操作流程：
 
 1. 检查 GPU 和模型状态。
-2. 如果模型缺失，使用界面下载，或手动放入模型目录。
-3. 上传一个视频文件。
-4. 默认参数建议保持：`language=zh`、`segment_seconds=600`、`device=cuda`、`compute_type=float16`。
-5. 如果需要更稳，选择稳定模式。
-6. 点击开始转写。
-7. 完成后下载 SRT、Markdown 时间轴文稿、详细教程和实施方案。
+2. 上传一个视频文件。
+3. 设置语言、设备、精度和切片秒数。
+4. 点击开始转写。
+5. 下载生成的 SRT、Markdown 文稿、教程和实施方案。
 
-## 5. 模型文件
+## 9. 命令行使用
 
-默认模型：
+在 WSL 或已配置 Python 环境中执行。
 
-```text
-Systran/faster-whisper-large-v3
-```
-
-下载地址：
-
-- 镜像：https://hf-mirror.com/Systran/faster-whisper-large-v3/tree/main
-- 原始：https://huggingface.co/Systran/faster-whisper-large-v3
-
-本地目录：
-
-```text
-models/faster-whisper-large-v3/
-```
-
-必须包含：
-
-```text
-config.json
-model.bin
-preprocessor_config.json
-tokenizer.json
-vocabulary.json
-```
-
-## 6. 命令行使用
-
-在 WSL 中执行：
+GPU 默认模式：
 
 ```bash
 source ~/venvs/faster-whisper/env.sh
@@ -164,7 +257,7 @@ python scripts/transcribe_course.py input/course_01.mp4 \
   --compute-type float16
 ```
 
-稳定模式：
+GPU 稳定模式：
 
 ```bash
 python scripts/transcribe_course.py input/course_01.mp4 \
@@ -186,80 +279,53 @@ python scripts/transcribe_course.py input/course_01.mp4 \
   --compute-type int8
 ```
 
-## 7. 输出文件
+## 10. 硬件与耗时参考
 
-输出目录：
+实际速度取决于视频音质、模型大小、CPU/GPU、磁盘速度和显存状态。
 
-```text
-output/<视频名>/
-```
+粗略参考：
 
-主要文件：
+| 硬件 | 推荐模型 | 25 分钟视频参考 |
+| --- | --- | --- |
+| NVIDIA GPU 8GB+ | large-v3 | 通常明显快于 CPU |
+| NVIDIA GPU 低显存 | medium 或 small | 建议稳定模式 |
+| 普通 CPU | small 或 medium | 可能需要数倍视频时长 |
 
-```text
-audio/full.wav
-audio/segments/part_000.wav
-transcripts/<视频名>.srt
-transcripts/<视频名>.md
-analysis/tutorial.md
-analysis/implementation_plan.md
-```
+如果电脑风扇明显升高、显存占满或任务失败，优先切换稳定模式。
 
-说明：
+## 11. 常见问题
 
-- `.srt`：字幕文件，可导入播放器或剪辑软件。
-- `.md`：带时间戳的转写文稿。
-- `tutorial.md`：按课程内容整理的教程草稿。
-- `implementation_plan.md`：按课程内容整理的实施方案草稿。
+### 模型未就绪
 
-## 8. Windows 客户端说明
+进入“模型管理”，检查缺失文件。可以点击下载，也可以手动下载到指定目录后重新扫描。
 
-当前 Windows 便携客户端已包含：
+### GPU 不可用
 
-- 本地免登录使用。
-- 模型管理、模型扫描和模型下载。
-- 视频文件选择和信息读取。
-- CPU/GPU、精度、切片长度和稳定模式参数。
-- 本地转写任务。
-- 输出目录打开入口。
-- 使用帮助、版本更新说明和捐助入口。
-
-捐助二维码素材路径：
+Windows 便携版需要本机 NVIDIA 驱动正常，并且 CUDA/cuDNN 运行库可被本地 engine 加载。若 GPU 模式失败，先切换：
 
 ```text
-apps/windows-client/src/assets/donate/wechat-pay.png
-apps/windows-client/src/assets/donate/wechat-official-account.png
+设备：cpu
+计算精度：int8
 ```
-
-如果图片不存在，客户端会显示“二维码待配置”。
-
-## 9. 常见问题
 
 ### 显存不足
 
 使用稳定模式：
 
-```bash
---segment-seconds 300 --compute-type int8_float16
+```text
+切片秒数：300
+计算精度：int8_float16
 ```
 
-### GPU 不可见
+也可以换用 `medium` 或 `small` 模型。
 
-在 WSL 中检查：
+### 转写内容有错字
 
-```bash
-nvidia-smi
-```
-
-如果不可见，先确认 Windows NVIDIA 驱动和 WSL GPU 支持是否正常。
-
-### 字幕专有名词错误
-
-faster-whisper 对品牌名、工具名、人名可能识别不准，正式发布前建议人工校对。
+专有名词、品牌名、人名、软件名可能识别不准。正式使用前建议人工校对 SRT 和 Markdown 文稿。
 
 ### Web UI 打不开
 
-检查服务进程：
+检查服务是否运行：
 
 ```powershell
 wsl.exe -d Ubuntu-22.04 -- pgrep -af scripts/app.py
@@ -271,6 +337,27 @@ wsl.exe -d Ubuntu-22.04 -- pgrep -af scripts/app.py
 wsl.exe -d Ubuntu-22.04 -- pkill -f scripts/app.py
 ```
 
-### 域名访问失败
+### 便携版打不开
 
-如果 ECS 上 `curl --resolve <域名>:443:127.0.0.1 https://<域名>/health` 正常，但公网访问失败，通常是 DNS A 记录尚未生效。
+确认系统已安装 Microsoft Edge WebView2 Runtime。Windows 11 通常已自带。
+
+### 输出目录没有文件
+
+检查界面错误提示。常见原因：
+
+- 视频文件路径无权限访问
+- 模型文件不完整
+- ffmpeg 运行失败
+- GPU 模式加载失败
+- 磁盘空间不足
+
+## 12. 数据与隐私
+
+Windows 便携版和本地 Web UI 的视频处理默认在本机完成：
+
+- 视频文件不上传云端。
+- 字幕和 Markdown 文稿不上传云端。
+- 模型文件保存在本地模型目录。
+- 输出文件保存在本地 `output/` 目录。
+
+后续如接入云端账号、版本更新或大模型 API，应以对应版本的隐私说明为准。
